@@ -1,4 +1,5 @@
 {
+  "$schema_note": "バランス数値のSource of Truth: ADR-003 > このJSON > GDD > README",
   "items": [
     {
       "id": "item_jubako_lid",
@@ -12,8 +13,8 @@
     {
       "id": "item_lacquer_chopsticks",
       "name": "漆塗り箸",
-      "years_old_range": [5, 30],
-      "base_contamination_chance": 0.5,
+      "years_old_range": [5, 25],
+      "base_contamination_chance": 0.4,
       "memory_text": "おじいちゃんが選んでくれた箸。もう同じものは手に入らない。",
       "washable": true,
       "discard_regret": 0.95
@@ -22,7 +23,7 @@
       "id": "item_mystery_cloth",
       "name": "正体不明の布",
       "years_old_range": [3, 20],
-      "base_contamination_chance": 0.9,
+      "base_contamination_chance": 0.55,
       "memory_text": "なぜここに…？",
       "washable": false,
       "discard_regret": 0.1
@@ -35,6 +36,24 @@
       "memory_text": "開けると中に百円玉が一枚。",
       "washable": false,
       "discard_regret": 0.6
+    },
+    {
+      "id": "item_ceramic_plate",
+      "name": "九谷焼の小皿",
+      "years_old_range": [2, 20],
+      "base_contamination_chance": 0.25,
+      "memory_text": "おばあちゃんが嫁入り道具で持ってきた小皿。金継ぎの跡が美しい。",
+      "washable": true,
+      "discard_regret": 0.9
+    },
+    {
+      "id": "item_dried_leaf",
+      "name": "干からびた葉っぱ",
+      "years_old_range": [1, 8],
+      "base_contamination_chance": 0.7,
+      "memory_text": "なんでこんなものが重箱に…？去年の紅葉狩りの名残かしら。",
+      "washable": false,
+      "discard_regret": 0.05
     }
   ],
   "tools": [
@@ -42,22 +61,38 @@
       "id": "tool_uv_light",
       "name": "UVライト",
       "description": "目に見えない汚染を可視化する。",
-      "reveal_chance": 0.9,
-      "unlock_layer": 1
+      "mvp_enabled": true,
+      "accuracy_rate": 0.77,
+      "false_positive_rate": 0.05,
+      "false_negative_rate": 0.03,
+      "inconclusive_rate": 0.15
     },
     {
       "id": "tool_smell_sensor",
       "name": "嗅覚センサー",
       "description": "腐敗臭・カビ臭を数値で検知する。",
-      "reveal_chance": 0.7,
-      "unlock_layer": 2
+      "mvp_enabled": false,
+      "accuracy_rate": 0.60,
+      "false_positive_rate": 0.08,
+      "false_negative_rate": 0.07,
+      "inconclusive_rate": 0.25
     },
     {
       "id": "tool_ai_bacteria",
       "name": "AI菌解析キット",
       "description": "写真を撮るだけで菌種と危険度を判定する。",
-      "reveal_chance": 0.95,
-      "unlock_layer": 3
+      "mvp_enabled": false,
+      "accuracy_rate": 0.88,
+      "false_positive_rate": 0.02,
+      "false_negative_rate": 0.02,
+      "inconclusive_rate": 0.08
     }
-  ]
+  ],
+  "balance_constants": {
+    "$ref": "docs/ADR-003-balance-invariants.md",
+    "contamination_formula": "clamp(base + years_old * 0.015, 0.05, 0.85)",
+    "wash_formula": "clamp(0.9 - years_old * 0.025, 0.1, 0.9)",
+    "score_min": -180,
+    "score_max": 192
+  }
 }

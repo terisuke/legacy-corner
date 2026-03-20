@@ -8,42 +8,62 @@
 ## コアゲーム性
 
 1. **Legacy Box** — 開封するたびに年数ランダム＋隠れ汚染確率
-2. **Hidden Contamination** — UVライト・AI菌解析で見えない汚れを探す
-3. **判断の連続** — 残す / 捨てる / 洗う の3択
-4. **Grandma Audit** — 理不尽レビューのおばあちゃんAI
-5. **Time Attack** — お正月まであと〇日カウントダウン
-6. **Corner Completionist** — 各隅0〜100%ゲージ（99%の絶望感）
+2. **Hidden Contamination** — UVライトで見えない汚れを探す（MVP: UVライトのみ）
+3. **判断の連続** — 残す / 捨てる / 洗う の3択（正解がわからない不完全情報下で決断）
+4. **Grandma Audit** — 理不尽レビューのおばあちゃんAI（スコアはここで初公開）
+5. **ターン制限** — 全10ターンで全部は調べられない（将来: Time Attack モード）
+
+> 詳細な設計は `docs/game-design.md` を参照。数値バランスは `docs/ADR-003-balance-invariants.md` が正。
 
 ---
 
-## ディレクトリ構成
+## MVP スコープ
 
+- 1箱・3層・6アイテム（テンプレート6種から生成）
+- 判断3択（残す / 捨てる / 洗う）+ ツール検査
+- ターン制限: 10ターン
+- UVライト1個（正確77% / 偽陽性5% / 偽陰性3% / 判定不能15%）
+- スコア正規化 0-100 + ランクS-D
+- 祖母レビュー（スコア帯別コメント5種 + 汚染発見3種 + 完璧1種）
+- リトライ機能
+
+## セットアップ
+
+### 前提条件
+- macOS / Windows / Linux
+- Godot 4.6.1-stable
+
+### インストール & 起動
+```bash
+# macOS: Godot 4.6.1 インストール
+brew install --cask godot
+
+# プロジェクトを開く
+# Godot を起動 → 「Import」→ project.godot を選択
+
+# またはコマンドラインから直接起動
+godot --path . --main-scene res://scenes/main/main.tscn
 ```
-legacy-corner/
-├── assets/
-│   ├── sprites/      # キャラクター・UI・アイテム画像
-│   ├── audio/        # BGM・SE
-│   ├── fonts/        # フォント
-│   └── vfx/          # エフェクト（UV光・汚染可視化）
-├── src/
-│   ├── core/         # ゲームループ・状態管理
-│   ├── systems/      # 汚染検知・判断・スコアリング
-│   ├── ui/           # UI コンポーネント
-│   └── data/         # 祖母セリフ・アイテム定義 JSON
-├── docs/             # 設計ドキュメント・ゲームデザイン
-├── builds/           # ビルド出力
-└── README.md
-```
+
+### ディレクトリ構成
+| ディレクトリ | 役割 |
+|-------------|------|
+| `scenes/main/` | メインシーン・ゲームループ |
+| `scenes/box/` | 重箱・層のシーン |
+| `scenes/ui/` | HUD・メニューシーン |
+| `scenes/grandma/` | おばあちゃんAIシーン |
+| `scripts/core/` | ゲームループ・状態管理（Autoload） |
+| `scripts/systems/` | 汚染検知・判断・スコアリング |
+| `scripts/ui/` | UIロジック |
+| `assets/sprites\|audio\|fonts\|vfx/` | アセット類 |
+| `data/` | JSON データ（アイテム・セリフ定義） |
+| `addons/` | Godot プラグイン |
+| `builds/` | ビルド出力（.gitignore対象） |
+
+### 実装の開始点
+`scenes/main/main.tscn` をメインシーンとして作成するところからスタート。
 
 ---
-
-## MVP スコープ（2時間）
-
-- [ ] 1箱・3層
-- [ ] 判断3択ループ
-- [ ] 祖母テキスト 10パターン
-- [ ] UVツール 1個
-- [ ] スコア表示 & シェアボタン
 
 ## 将来のDLC
 
