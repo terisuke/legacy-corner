@@ -2,6 +2,8 @@ extends Node
 ## ScoreManager — Tracks score internally during gameplay.
 ## Score is NEVER exposed until calculate_final_score() is called (INV-2).
 
+signal decision_recorded(item_id: String, action: String, result: Dictionary)
+
 var _score_min: int = 0
 var _score_max: int = 0
 var _rank_s_min: int = 0
@@ -96,7 +98,7 @@ func record_decision(item_data: Dictionary, action: String, action_result: Dicti
 		"score_delta": score_delta,
 		"triggered_regret": triggered_regret,
 	}
-	GameManager.decision_made.emit(item_data.get("id", ""), resolved_action, item_data["decision"])
+	decision_recorded.emit(item_data.get("id", ""), resolved_action, item_data["decision"])
 
 	_decision_history.append({
 		"item_id": item_data.get("id", ""),

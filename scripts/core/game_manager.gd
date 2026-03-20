@@ -32,6 +32,8 @@ func _ready() -> void:
 	assert(_max_turns > 0, "GameManager: max_turns must be > 0")
 	assert(_layers_count > 0, "GameManager: layers_count must be > 0")
 	assert(_items_per_layer > 0, "GameManager: items_per_layer must be > 0")
+	if not ScoreManager.decision_recorded.is_connected(_on_score_manager_decision_recorded):
+		ScoreManager.decision_recorded.connect(_on_score_manager_decision_recorded)
 	turns_remaining = _max_turns
 
 
@@ -65,11 +67,6 @@ func use_turn() -> bool:
 
 	turns_remaining -= 1
 	turn_consumed.emit(turns_remaining)
-
-	if turns_remaining == 0:
-		_end_game("timeout")
-		return false
-
 	return true
 
 
@@ -83,14 +80,14 @@ func advance_item() -> void:
 	if current_state != GameState.ITEM_INSPECT and current_state != GameState.DECISION:
 		push_error("GameManager: advance_item called in invalid state %s" % GameState.keys()[current_state])
 		return
-	# INV-4: ターン0では進行不可
-	if turns_remaining <= 0:
-		push_error("GameManager: INV-4 — cannot advance, turns_remaining is 0")
-		return
 	# INV-1: 現在のアイテムが判断済みでなければ進行不可
 	var current: Dictionary = get_current_item()
 	if not current.is_empty() and current.get("decision", null) == null:
 		push_error("GameManager: INV-1 — cannot advance, current item has no decision")
+		return
+	# Allow the final decision to be recorded before timing out the session.
+	if turns_remaining <= 0:
+		finalize_action()
 		return
 	current_item_index += 1
 
@@ -124,5 +121,17 @@ func get_items_for_layer(layer_index: int) -> Array:
 
 
 func _end_game(reason: String) -> void:
+	if current_state == GameState.GRANDMA_AUDIT or current_state == GameState.RESULT:
+		return
 	change_state(GameState.GRANDMA_AUDIT)
 	game_ended.emit(reason)
+
+
+func finalize_action() -> void:
+	if turns_remaining > 0:
+		return
+	_end_game("timeout")
+
+
+func _on_score_manager_decision_recorded(item_id: String, action: String, result: Dictionary) -> void:
+	decision_made.emit(item_id, action, result)

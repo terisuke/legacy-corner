@@ -95,6 +95,13 @@ func get_perfect_comment() -> String:
 func generate_game_items(rng: RandomNumberGenerator) -> Array:
 	var templates: Array = get_item_templates()
 	var constants: Dictionary = get_balance_constants()
+	assert(constants.has("contamination_coefficient"), "DataLoader: balance_constants missing contamination_coefficient")
+	assert(constants.has("contamination_min"), "DataLoader: balance_constants missing contamination_min")
+	assert(constants.has("contamination_max"), "DataLoader: balance_constants missing contamination_max")
+	assert(constants.has("wash_base"), "DataLoader: balance_constants missing wash_base")
+	assert(constants.has("wash_coefficient"), "DataLoader: balance_constants missing wash_coefficient")
+	assert(constants.has("wash_min"), "DataLoader: balance_constants missing wash_min")
+	assert(constants.has("wash_max"), "DataLoader: balance_constants missing wash_max")
 	var contam_coeff: float = constants["contamination_coefficient"] as float
 	var contam_min: float = constants["contamination_min"] as float
 	var contam_max: float = constants["contamination_max"] as float
