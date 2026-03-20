@@ -106,6 +106,7 @@ func _show_current_item() -> void:
 	wash_button.disabled = not item.get("washable", false)
 	turn_label.text = "残りターン: %d" % GameManager.turns_remaining
 	_set_actions_enabled(true)
+	GameManager.change_state(GameManager.GameState.ITEM_INSPECT)
 
 
 func _set_actions_enabled(enabled: bool) -> void:
@@ -119,21 +120,23 @@ func _set_actions_enabled(enabled: bool) -> void:
 # === Decision handlers — all delegate to DecisionSystem ===
 
 func _on_keep_pressed() -> void:
+	GameManager.change_state(GameManager.GameState.DECISION)
 	var item: Dictionary = GameManager.get_current_item()
+	if not GameManager.use_turn():
+		return
 	var result: Dictionary = _decision_system.execute_decision(item, "keep", GameManager.rng)
 	if not result.get("success", false):
-		return
-	if not GameManager.use_turn():
 		return
 	_advance_to_next()
 
 
 func _on_discard_pressed() -> void:
+	GameManager.change_state(GameManager.GameState.DECISION)
 	var item: Dictionary = GameManager.get_current_item()
+	if not GameManager.use_turn():
+		return
 	var result: Dictionary = _decision_system.execute_decision(item, "discard", GameManager.rng)
 	if not result.get("success", false):
-		return
-	if not GameManager.use_turn():
 		return
 	# If regret was triggered, delay advancement so player can see memory text
 	var res: Dictionary = result.get("result", {})
@@ -144,13 +147,14 @@ func _on_discard_pressed() -> void:
 
 
 func _on_wash_pressed() -> void:
+	GameManager.change_state(GameManager.GameState.DECISION)
 	var item: Dictionary = GameManager.get_current_item()
 	if not item.get("washable", false):
 		return
+	if not GameManager.use_turn():
+		return
 	var result: Dictionary = _decision_system.execute_decision(item, "wash", GameManager.rng)
 	if not result.get("success", false):
-		return
-	if not GameManager.use_turn():
 		return
 	_advance_to_next()
 
