@@ -62,6 +62,11 @@ func advance_item() -> void:
 	# INV-4: ターン0では進行不可
 	if turns_remaining <= 0:
 		return
+	# INV-1: 現在のアイテムが判断済みでなければ進行不可
+	var current: Dictionary = get_current_item()
+	if not current.is_empty() and current.get("decision", null) == null:
+		push_error("GameManager: INV-1 — cannot advance, current item has no decision")
+		return
 	current_item_index += 1
 
 	if current_item_index >= ITEMS_PER_LAYER:

@@ -41,6 +41,9 @@ func record_decision(item_data: Dictionary, action: String, action_result: Dicti
 		push_error("ScoreManager: INV-1 violation — duplicate decision for '%s'" % item_data.get("id", ""))
 		return
 
+	# INV-1: mark item as decided (prevents duplicate calls)
+	item_data["decision"] = action
+
 	var score_delta: int = _calculate_delta(item_data, action)
 
 	if action_result.get("tool_found_contamination", false):
