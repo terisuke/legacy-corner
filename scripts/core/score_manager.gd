@@ -41,10 +41,16 @@ func record_decision(item_data: Dictionary, action: String, action_result: Dicti
 		push_error("ScoreManager: INV-1 violation — duplicate decision for '%s'" % item_data.get("id", ""))
 		return
 
-	# INV-1: mark item as decided (prevents duplicate calls)
-	item_data["decision"] = action
+	var resolved_action: String = _normalize_action(action)
+	if resolved_action.is_empty():
+		return
 
-	var score_delta: int = _calculate_delta(item_data, action)
+	var wash_succeeded: Variant = _resolve_wash_succeeded(action, action_result)
+	if resolved_action == "wash" and wash_succeeded == null:
+		push_error("ScoreManager: wash action requires action_result['wash_succeeded']")
+		return
+
+	var score_delta: int = _calculate_delta(item_data, resolved_action, wash_succeeded)
 
 	if action_result.get("tool_found_contamination", false):
 		score_delta += _d.get("tool_bonus", 5)
@@ -52,20 +58,45 @@ func record_decision(item_data: Dictionary, action: String, action_result: Dicti
 	_raw_score += score_delta
 
 	var triggered_regret: bool = (
-		action == "discard" and not item_data.get("is_contaminated", false)
+		resolved_action == "discard" and not item_data.get("is_contaminated", false)
 	)
+
+	# Store a domain-shaped terminal decision instead of raw transport strings.
+	item_data["decision"] = {
+		"action": resolved_action,
+		"wash_succeeded": wash_succeeded,
+		"score_delta": score_delta,
+		"triggered_regret": triggered_regret,
+	}
 
 	_decision_history.append({
 		"item_id": item_data.get("id", ""),
 		"item_name": item_data.get("name", ""),
-		"action": action,
+		"action": resolved_action,
+		"wash_succeeded": wash_succeeded,
 		"score_delta": score_delta,
 		"is_contaminated": item_data.get("is_contaminated", false),
 		"triggered_regret": triggered_regret,
 	})
 
 
-func _calculate_delta(item_data: Dictionary, action: String) -> int:
+func _normalize_action(action: String) -> String:
+	if action == "wash_success":
+		return "wash"
+	if action == "wash_fail":
+		return "wash"
+	return action
+
+
+func _resolve_wash_succeeded(action: String, action_result: Dictionary) -> Variant:
+	if action == "wash_success":
+		return true
+	if action == "wash_fail":
+		return false
+	return action_result.get("wash_succeeded", null)
+
+
+func _calculate_delta(item_data: Dictionary, action: String, wash_succeeded: Variant) -> int:
 	var is_contaminated: bool = item_data.get("is_contaminated", false)
 	var regret: float = item_data.get("discard_regret", 0.0) as float
 
@@ -78,9 +109,9 @@ func _calculate_delta(item_data: Dictionary, action: String) -> int:
 			if is_contaminated:
 				return _d.get("keep_contaminated", -30)
 			return _d.get("keep_safe", 15)
-		"wash_success":
-			return _d.get("wash_success", 25)
-		"wash_fail":
+		"wash":
+			if wash_succeeded:
+				return _d.get("wash_success", 25)
 			return _d.get("wash_fail", -15)
 		_:
 			push_error("ScoreManager: unknown action '%s'" % action)

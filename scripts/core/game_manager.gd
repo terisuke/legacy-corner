@@ -9,23 +9,30 @@ signal turn_consumed(remaining: int)
 signal layer_opened(layer_index: int)
 signal game_ended(end_reason: String)
 
-const MAX_TURNS := 10
-const LAYERS_COUNT := 3
-const ITEMS_PER_LAYER := 2
-
 var current_state: GameState = GameState.TITLE
 var current_layer: int = 0
 var current_item_index: int = 0
-var turns_remaining: int = MAX_TURNS
+var turns_remaining: int = 10
 var game_items: Array = []
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var _max_turns: int = 10
+var _layers_count: int = 3
+var _items_per_layer: int = 2
+
+
+func _ready() -> void:
+	var constants: Dictionary = DataLoader.get_balance_constants()
+	_max_turns = constants.get("max_turns", 10) as int
+	_layers_count = constants.get("layers_count", 3) as int
+	_items_per_layer = constants.get("items_per_layer", 2) as int
+	turns_remaining = _max_turns
 
 
 func start_game(seed_value: Variant = null) -> void:
 	current_state = GameState.TITLE
 	current_layer = 0
 	current_item_index = 0
-	turns_remaining = MAX_TURNS
+	turns_remaining = _max_turns
 	game_items = []
 	ScoreManager.reset()
 
@@ -69,11 +76,11 @@ func advance_item() -> void:
 		return
 	current_item_index += 1
 
-	if current_item_index >= ITEMS_PER_LAYER:
+	if current_item_index >= _items_per_layer:
 		current_item_index = 0
 		current_layer += 1
 
-		if current_layer >= LAYERS_COUNT:
+		if current_layer >= _layers_count:
 			_end_game("completed")
 			return
 
@@ -81,15 +88,15 @@ func advance_item() -> void:
 
 
 func get_current_item() -> Dictionary:
-	var index: int = current_layer * ITEMS_PER_LAYER + current_item_index
+	var index: int = current_layer * _items_per_layer + current_item_index
 	if index < 0 or index >= game_items.size():
 		return {}
 	return game_items[index]
 
 
 func get_items_for_layer(layer_index: int) -> Array:
-	var start: int = layer_index * ITEMS_PER_LAYER
-	var end: int = start + ITEMS_PER_LAYER
+	var start: int = layer_index * _items_per_layer
+	var end: int = start + _items_per_layer
 
 	if start < 0 or start >= game_items.size():
 		return []
