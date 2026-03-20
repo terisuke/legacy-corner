@@ -51,7 +51,7 @@ godot --path . --main-scene res://scenes/main/main.tscn
 | `scenes/main/` | メインシーン・ゲームループ |
 | `scenes/box/` | 重箱・層のシーン |
 | `scenes/ui/` | HUD・メニューシーン |
-| `scenes/grandma/` | おばあちゃんAIシーン |
+| `scenes/grandma/` | おばあちゃん審判シーン |
 | `scripts/core/` | ゲームループ・状態管理（Autoload） |
 | `scripts/systems/` | 汚染検知・判断・スコアリング |
 | `scripts/ui/` | UIロジック |
