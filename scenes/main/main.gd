@@ -135,7 +135,11 @@ func _on_discard_pressed() -> void:
 		return
 	if not GameManager.use_turn():
 		return
-	# Memory text shown via regret_triggered signal
+	# If regret was triggered, delay advancement so player can see memory text
+	var res: Dictionary = result.get("result", {})
+	if res.get("triggered_regret", false):
+		_set_actions_enabled(false)
+		await get_tree().create_timer(1.5).timeout
 	_advance_to_next()
 
 
