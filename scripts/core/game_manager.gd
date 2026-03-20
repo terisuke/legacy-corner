@@ -49,6 +49,12 @@ func start_game(seed_value: Variant = null) -> void:
 		rng.seed = seed_value as int
 
 	game_items = DataLoader.generate_game_items(rng)
+	assert(
+		game_items.size() == _layers_count * _items_per_layer,
+		"GameManager: item count %d != layers_count(%d) * items_per_layer(%d)" % [
+			game_items.size(), _layers_count, _items_per_layer
+		]
+	)
 	change_state(GameState.LAYER_OPEN)
 	layer_opened.emit(0)
 
