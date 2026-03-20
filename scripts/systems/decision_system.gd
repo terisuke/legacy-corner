@@ -4,11 +4,12 @@ extends RefCounted
 signal decision_made(item_id: String, action: String, result_summary: Dictionary)
 signal regret_triggered(item_data: Dictionary)
 
-var _contamination_system: ContaminationSystem
+const _ContaminationSystemScript = preload("res://scripts/systems/contamination_system.gd")
+var _contamination_system: RefCounted
 
 
 func _init() -> void:
-	_contamination_system = ContaminationSystem.new()
+	_contamination_system = _ContaminationSystemScript.new()
 
 
 func can_wash(item_data: Dictionary) -> bool:

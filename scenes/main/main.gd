@@ -21,15 +21,18 @@ var _grandma_instance: Node = null
 var _result_instance: Node = null
 var _audit_report: Dictionary = {}
 
-const _ContaminationSystemScript = preload("res://scripts/systems/contamination_system.gd")
-var _contamination_system: RefCounted = null
+const _DecisionSystemScript = preload("res://scripts/systems/decision_system.gd")
+var _decision_system: RefCounted = null
 
 
 func _ready() -> void:
 	_item_card_scene = load("res://scenes/box/item_card.tscn")
 	_grandma_scene = load("res://scenes/grandma/grandma_audit.tscn")
 	_result_scene = load("res://scenes/ui/result_screen.tscn")
-	_contamination_system = _ContaminationSystemScript.new()
+	_decision_system = _DecisionSystemScript.new()
+
+	# Connect DecisionSystem signals for UI feedback
+	_decision_system.regret_triggered.connect(_on_regret_triggered)
 
 	GameManager.state_changed.connect(_on_state_changed)
 	GameManager.turn_consumed.connect(_on_turn_consumed)
@@ -41,7 +44,7 @@ func _ready() -> void:
 	wash_button.pressed.connect(_on_wash_pressed)
 	tool_button.pressed.connect(_on_tool_pressed)
 
-	# Tool button disabled until full Wave 3 integration
+	# Tool button disabled until full integration
 	tool_button.disabled = true
 
 	_show_panel(title_panel)
@@ -81,7 +84,6 @@ func _on_layer_opened(layer_index: int) -> void:
 
 
 func _on_start_pressed() -> void:
-	# Clean up previous game instances
 	_cleanup_grandma()
 	_cleanup_result()
 	GameManager.start_game()
@@ -114,11 +116,15 @@ func _set_actions_enabled(enabled: bool) -> void:
 	)
 
 
+# === Decision handlers — all delegate to DecisionSystem ===
+
 func _on_keep_pressed() -> void:
 	if not GameManager.use_turn():
 		return
 	var item: Dictionary = GameManager.get_current_item()
-	ScoreManager.record_decision(item, "keep", {})
+	var result: Dictionary = _decision_system.execute_decision(item, "keep", GameManager.rng)
+	if not result.get("success", false):
+		return
 	_advance_to_next()
 
 
@@ -126,9 +132,10 @@ func _on_discard_pressed() -> void:
 	if not GameManager.use_turn():
 		return
 	var item: Dictionary = GameManager.get_current_item()
-	ScoreManager.record_decision(item, "discard", {})
-	if _current_item_card != null:
-		_current_item_card.show_memory()
+	var result: Dictionary = _decision_system.execute_decision(item, "discard", GameManager.rng)
+	if not result.get("success", false):
+		return
+	# Memory text shown via regret_triggered signal
 	_advance_to_next()
 
 
@@ -136,14 +143,21 @@ func _on_wash_pressed() -> void:
 	if not GameManager.use_turn():
 		return
 	var item: Dictionary = GameManager.get_current_item()
-	var success: bool = _contamination_system.attempt_wash(item, GameManager.rng)
-	var action: String = "wash_success" if success else "wash_fail"
-	ScoreManager.record_decision(item, action, {})
+	if not item.get("washable", false):
+		return
+	var result: Dictionary = _decision_system.execute_decision(item, "wash", GameManager.rng)
+	if not result.get("success", false):
+		return
 	_advance_to_next()
 
 
 func _on_tool_pressed() -> void:
 	pass
+
+
+func _on_regret_triggered(_item_data: Dictionary) -> void:
+	if _current_item_card != null:
+		_current_item_card.show_memory()
 
 
 func _advance_to_next() -> void:
@@ -159,13 +173,11 @@ func _advance_to_next() -> void:
 func _show_grandma_audit() -> void:
 	_show_panel(grandma_panel)
 
-	# Calculate final score
 	var unprocessed: int = _count_unprocessed()
 	_audit_report = ScoreManager.calculate_final_score(
 		GameManager.turns_remaining, unprocessed
 	)
 
-	# Instantiate grandma scene into the panel
 	_cleanup_grandma()
 	_grandma_instance = _grandma_scene.instantiate()
 	grandma_panel.add_child(_grandma_instance)
