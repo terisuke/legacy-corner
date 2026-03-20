@@ -73,11 +73,8 @@ func _on_state_changed(
 
 func _on_turn_consumed(remaining: int) -> void:
 	turn_label.text = "残りターン: %d" % remaining
-	if remaining <= 0:
-		_set_actions_enabled(false)
-		await get_tree().create_timer(0.5).timeout
-		# change_state triggers _on_state_changed → _show_grandma_audit
-		GameManager.change_state(GameManager.GameState.GRANDMA_AUDIT)
+	# Timeout is handled by advance_item → finalize_action → _end_game
+	# Do NOT trigger grandma audit here to avoid double transition
 
 
 func _on_layer_opened(layer_index: int) -> void:
@@ -125,23 +122,21 @@ func _set_actions_enabled(enabled: bool) -> void:
 
 func _on_keep_pressed() -> void:
 	var item: Dictionary = GameManager.get_current_item()
-	if not GameManager.use_turn():
-		return
-	GameManager.change_state(GameManager.GameState.DECISION)
 	var result: Dictionary = _decision_system.execute_decision(item, "keep", GameManager.rng)
 	if not result.get("success", false):
 		return
+	GameManager.change_state(GameManager.GameState.DECISION)
+	GameManager.use_turn()
 	_advance_to_next()
 
 
 func _on_discard_pressed() -> void:
 	var item: Dictionary = GameManager.get_current_item()
-	if not GameManager.use_turn():
-		return
-	GameManager.change_state(GameManager.GameState.DECISION)
 	var result: Dictionary = _decision_system.execute_decision(item, "discard", GameManager.rng)
 	if not result.get("success", false):
 		return
+	GameManager.change_state(GameManager.GameState.DECISION)
+	GameManager.use_turn()
 	var res: Dictionary = result.get("result", {})
 	if res.get("triggered_regret", false):
 		_set_actions_enabled(false)
@@ -153,12 +148,11 @@ func _on_wash_pressed() -> void:
 	var item: Dictionary = GameManager.get_current_item()
 	if not item.get("washable", false):
 		return
-	if not GameManager.use_turn():
-		return
-	GameManager.change_state(GameManager.GameState.DECISION)
 	var result: Dictionary = _decision_system.execute_decision(item, "wash", GameManager.rng)
 	if not result.get("success", false):
 		return
+	GameManager.change_state(GameManager.GameState.DECISION)
+	GameManager.use_turn()
 	_advance_to_next()
 
 
@@ -186,6 +180,7 @@ func _on_tool_pressed() -> void:
 			display_text = "❓ 判定不能"
 	if _current_item_card != null:
 		_current_item_card.show_tool_result(display_text)
+	tool_button.disabled = true
 	turn_label.text = "残りターン: %d" % GameManager.turns_remaining
 
 
