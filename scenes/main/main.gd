@@ -15,11 +15,12 @@ extends Control
 @onready var retry_button := $ResultPanel/VBoxContainer/RetryButton
 
 var _current_item_card: Node = null
-var ItemCardScene: PackedScene = null
+var _item_card_scene: PackedScene = null
+var _contamination_system := ContaminationSystem.new()
 
 
 func _ready() -> void:
-	ItemCardScene = load("res://scenes/box/item_card.tscn")
+	_item_card_scene = load("res://scenes/box/item_card.tscn")
 
 	GameManager.state_changed.connect(_on_state_changed)
 	GameManager.turn_consumed.connect(_on_turn_consumed)
@@ -31,6 +32,9 @@ func _ready() -> void:
 	discard_button.pressed.connect(_on_discard_pressed)
 	wash_button.pressed.connect(_on_wash_pressed)
 	tool_button.pressed.connect(_on_tool_pressed)
+
+	# Tool button disabled until Wave 3 integration is complete
+	tool_button.disabled = true
 
 	_show_panel(title_panel)
 
@@ -63,7 +67,8 @@ func _on_turn_consumed(remaining: int) -> void:
 
 
 func _on_layer_opened(layer_index: int) -> void:
-	layer_label.text = "層: %d / %d" % [layer_index + 1, GameManager.LAYERS_COUNT]
+	var layers_count: int = GameManager.get_layers_count() if GameManager.has_method("get_layers_count") else 3
+	layer_label.text = "層: %d / %d" % [layer_index + 1, layers_count]
 	_show_current_item()
 
 
@@ -78,9 +83,10 @@ func _show_current_item() -> void:
 
 	var item: Dictionary = GameManager.get_current_item()
 	if item.is_empty():
+		_set_actions_enabled(false)
 		return
 
-	_current_item_card = ItemCardScene.instantiate()
+	_current_item_card = _item_card_scene.instantiate()
 	item_area.add_child(_current_item_card)
 	_current_item_card.setup(item)
 
@@ -95,7 +101,7 @@ func _set_actions_enabled(enabled: bool) -> void:
 	wash_button.disabled = (
 		not enabled or not GameManager.get_current_item().get("washable", false)
 	)
-	tool_button.disabled = not enabled
+	# tool_button stays disabled until Wave 3
 
 
 func _on_keep_pressed() -> void:
@@ -111,7 +117,8 @@ func _on_discard_pressed() -> void:
 		return
 	var item: Dictionary = GameManager.get_current_item()
 	ScoreManager.record_decision(item, "discard", {})
-	if not item.get("is_contaminated", false) and _current_item_card != null:
+	# Always show memory on discard (INV-3: no is_contaminated branch in UI)
+	if _current_item_card != null:
 		_current_item_card.show_memory()
 	_advance_to_next()
 
@@ -120,18 +127,16 @@ func _on_wash_pressed() -> void:
 	if not GameManager.use_turn():
 		return
 	var item: Dictionary = GameManager.get_current_item()
-	var success: bool = GameManager.rng.randf() < item.get("wash_success_rate", 0.5)
+	# Delegate to ContaminationSystem (single authority for wash logic)
+	var success: bool = _contamination_system.attempt_wash(item, GameManager.rng)
 	var action: String = "wash_success" if success else "wash_fail"
 	ScoreManager.record_decision(item, action, {})
 	_advance_to_next()
 
 
 func _on_tool_pressed() -> void:
-	if not GameManager.use_turn():
-		return
-	var item: Dictionary = GameManager.get_current_item()
-	if _current_item_card != null:
-		_current_item_card.show_tool_result("（Wave 3で実装）")
+	# Disabled in MVP — will be enabled in Wave 3 with ContaminationSystem.inspect_item()
+	pass
 
 
 func _advance_to_next() -> void:
