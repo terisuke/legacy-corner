@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://main_scene"]
+[gd_scene load_steps=3 format=3 uid="uid://main_scene"]
 
 [ext_resource type="Script" path="res://scenes/main/main.gd" id="1_script"]
+[ext_resource type="Theme" path="res://assets/theme/game_theme.tres" id="2_theme"]
 
 [node name="Main" type="Control"]
 layout_mode = 1
@@ -9,6 +10,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 script = ExtResource("1_script")
 
 [node name="TitlePanel" type="CenterContainer" parent="."]
@@ -25,16 +27,25 @@ layout_mode = 2
 
 [node name="TitleLabel" type="Label" parent="TitlePanel/VBoxContainer"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 48
 text = "隅の遺産"
 horizontal_alignment = 1
 
 [node name="SubtitleLabel" type="Label" parent="TitlePanel/VBoxContainer"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.7, 0.65, 0.5, 1)
 text = "～重箱の隠れ汚染を暴け～"
 horizontal_alignment = 1
 
+[node name="Spacer" type="Control" parent="TitlePanel/VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 30)
+
 [node name="StartButton" type="Button" parent="TitlePanel/VBoxContainer"]
 layout_mode = 2
+custom_minimum_size = Vector2(200, 50)
+theme_override_font_sizes/font_size = 24
 text = "はじめる"
 
 [node name="GamePanel" type="Control" parent="."]

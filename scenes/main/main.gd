@@ -22,6 +22,7 @@ var _result_instance: Node = null
 var _audit_report: Dictionary = {}
 
 const _DecisionSystemScript = preload("res://scripts/systems/decision_system.gd")
+const _ContaminationSystemScript = preload("res://scripts/systems/contamination_system.gd")
 var _decision_system: RefCounted = null
 
 
@@ -43,9 +44,6 @@ func _ready() -> void:
 	discard_button.pressed.connect(_on_discard_pressed)
 	wash_button.pressed.connect(_on_wash_pressed)
 	tool_button.pressed.connect(_on_tool_pressed)
-
-	# Tool button disabled until full integration
-	tool_button.disabled = true
 
 	_show_panel(title_panel)
 
@@ -75,6 +73,8 @@ func _on_state_changed(
 
 func _on_turn_consumed(remaining: int) -> void:
 	turn_label.text = "残りターン: %d" % remaining
+	# Timeout is handled by advance_item → finalize_action → _end_game
+	# Do NOT trigger grandma audit here to avoid double transition
 
 
 func _on_layer_opened(layer_index: int) -> void:
@@ -106,6 +106,7 @@ func _show_current_item() -> void:
 	wash_button.disabled = not item.get("washable", false)
 	turn_label.text = "残りターン: %d" % GameManager.turns_remaining
 	_set_actions_enabled(true)
+	GameManager.change_state(GameManager.GameState.ITEM_INSPECT)
 
 
 func _set_actions_enabled(enabled: bool) -> void:
@@ -114,6 +115,7 @@ func _set_actions_enabled(enabled: bool) -> void:
 	wash_button.disabled = (
 		not enabled or not GameManager.get_current_item().get("washable", false)
 	)
+	tool_button.disabled = not enabled
 
 
 # === Decision handlers — all delegate to DecisionSystem ===
@@ -123,8 +125,8 @@ func _on_keep_pressed() -> void:
 	var result: Dictionary = _decision_system.execute_decision(item, "keep", GameManager.rng)
 	if not result.get("success", false):
 		return
-	if not GameManager.use_turn():
-		return
+	GameManager.change_state(GameManager.GameState.DECISION)
+	GameManager.use_turn()
 	_advance_to_next()
 
 
@@ -133,9 +135,8 @@ func _on_discard_pressed() -> void:
 	var result: Dictionary = _decision_system.execute_decision(item, "discard", GameManager.rng)
 	if not result.get("success", false):
 		return
-	if not GameManager.use_turn():
-		return
-	# If regret was triggered, delay advancement so player can see memory text
+	GameManager.change_state(GameManager.GameState.DECISION)
+	GameManager.use_turn()
 	var res: Dictionary = result.get("result", {})
 	if res.get("triggered_regret", false):
 		_set_actions_enabled(false)
@@ -150,13 +151,37 @@ func _on_wash_pressed() -> void:
 	var result: Dictionary = _decision_system.execute_decision(item, "wash", GameManager.rng)
 	if not result.get("success", false):
 		return
-	if not GameManager.use_turn():
-		return
+	GameManager.change_state(GameManager.GameState.DECISION)
+	GameManager.use_turn()
 	_advance_to_next()
 
 
 func _on_tool_pressed() -> void:
-	pass
+	var item: Dictionary = GameManager.get_current_item()
+	# Guard: already inspected or no tools available
+	if item.get("inspection_result", null) != null:
+		return
+	var mvp_tools: Array = DataLoader.get_mvp_tools()
+	if mvp_tools.is_empty():
+		return
+	if not GameManager.use_turn():
+		return
+	var tool_data: Dictionary = mvp_tools[0]
+	var cs: RefCounted = _ContaminationSystemScript.new()
+	var result: Dictionary = cs.inspect_item(item, tool_data, GameManager.rng)
+	item["inspection_result"] = result
+	var display_text: String = ""
+	match result.get("displayed_result", ""):
+		"contaminated":
+			display_text = "⚠ 汚染あり"
+		"clean":
+			display_text = "✅ 汚染なし"
+		"inconclusive":
+			display_text = "❓ 判定不能"
+	if _current_item_card != null:
+		_current_item_card.show_tool_result(display_text)
+	tool_button.disabled = true
+	turn_label.text = "残りターン: %d" % GameManager.turns_remaining
 
 
 func _on_regret_triggered(_item_data: Dictionary) -> void:
