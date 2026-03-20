@@ -35,3 +35,4 @@ ScoreManager="*res://scripts/core/score_manager.gd"
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.08, 0.08, 0.1, 1)

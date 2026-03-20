@@ -73,6 +73,12 @@ func _on_state_changed(
 
 func _on_turn_consumed(remaining: int) -> void:
 	turn_label.text = "残りターン: %d" % remaining
+	if remaining <= 0:
+		_set_actions_enabled(false)
+		# Brief delay to show final state, then end game
+		await get_tree().create_timer(0.5).timeout
+		GameManager.change_state(GameManager.GameState.GRANDMA_AUDIT)
+		_show_grandma_audit()
 
 
 func _on_layer_opened(layer_index: int) -> void:
