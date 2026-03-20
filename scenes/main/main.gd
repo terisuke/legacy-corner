@@ -16,11 +16,14 @@ extends Control
 
 var _current_item_card: Node = null
 var _item_card_scene: PackedScene = null
-var _contamination_system := ContaminationSystem.new()
+
+const _ContaminationSystemScript = preload("res://scripts/systems/contamination_system.gd")
+var _contamination_system: RefCounted = null
 
 
 func _ready() -> void:
 	_item_card_scene = load("res://scenes/box/item_card.tscn")
+	_contamination_system = _ContaminationSystemScript.new()
 
 	GameManager.state_changed.connect(_on_state_changed)
 	GameManager.turn_consumed.connect(_on_turn_consumed)
