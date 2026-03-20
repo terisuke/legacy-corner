@@ -22,6 +22,7 @@ var _result_instance: Node = null
 var _audit_report: Dictionary = {}
 
 const _DecisionSystemScript = preload("res://scripts/systems/decision_system.gd")
+const _ContaminationSystemScript = preload("res://scripts/systems/contamination_system.gd")
 var _decision_system: RefCounted = null
 
 
@@ -43,9 +44,6 @@ func _ready() -> void:
 	discard_button.pressed.connect(_on_discard_pressed)
 	wash_button.pressed.connect(_on_wash_pressed)
 	tool_button.pressed.connect(_on_tool_pressed)
-
-	# Tool button disabled until full integration
-	tool_button.disabled = true
 
 	_show_panel(title_panel)
 
@@ -115,6 +113,7 @@ func _set_actions_enabled(enabled: bool) -> void:
 	wash_button.disabled = (
 		not enabled or not GameManager.get_current_item().get("washable", false)
 	)
+	tool_button.disabled = not enabled
 
 
 # === Decision handlers — all delegate to DecisionSystem ===
@@ -160,7 +159,27 @@ func _on_wash_pressed() -> void:
 
 
 func _on_tool_pressed() -> void:
-	pass
+	if not GameManager.use_turn():
+		return
+	var item: Dictionary = GameManager.get_current_item()
+	var mvp_tools: Array = DataLoader.get_mvp_tools()
+	if mvp_tools.is_empty():
+		return
+	var tool_data: Dictionary = mvp_tools[0]
+	var cs = _ContaminationSystemScript.new()
+	var result: Dictionary = cs.inspect_item(item, tool_data, GameManager.rng)
+	item["inspection_result"] = result
+	var display_text: String = ""
+	match result.get("displayed_result", ""):
+		"contaminated":
+			display_text = "⚠ 汚染あり"
+		"clean":
+			display_text = "✅ 汚染なし"
+		"inconclusive":
+			display_text = "❓ 判定不能"
+	if _current_item_card != null:
+		_current_item_card.show_tool_result(display_text)
+	turn_label.text = "残りターン: %d" % GameManager.turns_remaining
 
 
 func _on_regret_triggered(_item_data: Dictionary) -> void:
