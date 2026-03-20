@@ -2,8 +2,8 @@ extends Node
 ## ScoreManager — Tracks score internally during gameplay.
 ## Score is NEVER exposed until calculate_final_score() is called (INV-2).
 
-var _score_min: int = -180
-var _score_max: int = 170
+var _score_min: int = 0
+var _score_max: int = 0
 
 # Score delta constants — loaded from DataLoader (INV-6: no hardcoded balance values)
 var _d: Dictionary = {}
@@ -15,18 +15,21 @@ var _decision_history: Array = []
 
 func _ready() -> void:
 	var c: Dictionary = DataLoader.get_balance_constants()
-	_score_min = c.get("score_min", -180) as int
-	_score_max = c.get("score_max", 170) as int
+	assert(c.has("score_min"), "ScoreManager: balance_constants missing score_min")
+	assert(c.has("score_max"), "ScoreManager: balance_constants missing score_max")
+	_score_min = c["score_min"] as int
+	_score_max = c["score_max"] as int
+	assert(_score_max > _score_min, "ScoreManager: score_max must be greater than score_min")
 	_d = {
-		"discard_contaminated": c.get("score_discard_contaminated", 20) as int,
-		"discard_safe_mul": c.get("score_discard_safe_multiplier", -10) as int,
-		"keep_safe": c.get("score_keep_safe", 15) as int,
-		"keep_contaminated": c.get("score_keep_contaminated", -30) as int,
-		"wash_success": c.get("score_wash_success", 25) as int,
-		"wash_fail": c.get("score_wash_fail", -15) as int,
-		"tool_bonus": c.get("score_tool_found_bonus", 5) as int,
-		"turn_bonus": c.get("score_turn_bonus", 3) as int,
-		"unprocessed": c.get("score_unprocessed_penalty", -20) as int,
+		"discard_contaminated": c["score_discard_contaminated"] as int,
+		"discard_safe_mul": c["score_discard_safe_multiplier"] as int,
+		"keep_safe": c["score_keep_safe"] as int,
+		"keep_contaminated": c["score_keep_contaminated"] as int,
+		"wash_success": c["score_wash_success"] as int,
+		"wash_fail": c["score_wash_fail"] as int,
+		"tool_bonus": c["score_tool_found_bonus"] as int,
+		"turn_bonus": c["score_turn_bonus"] as int,
+		"unprocessed": c["score_unprocessed_penalty"] as int,
 	}
 
 
@@ -53,7 +56,7 @@ func record_decision(item_data: Dictionary, action: String, action_result: Dicti
 	var score_delta: int = _calculate_delta(item_data, resolved_action, wash_succeeded)
 
 	if action_result.get("tool_found_contamination", false):
-		score_delta += _d.get("tool_bonus", 5)
+		score_delta += _d["tool_bonus"] as int
 
 	_raw_score += score_delta
 
@@ -68,6 +71,7 @@ func record_decision(item_data: Dictionary, action: String, action_result: Dicti
 		"score_delta": score_delta,
 		"triggered_regret": triggered_regret,
 	}
+	GameManager.decision_made.emit(item_data.get("id", ""), resolved_action, item_data["decision"])
 
 	_decision_history.append({
 		"item_id": item_data.get("id", ""),
@@ -103,24 +107,24 @@ func _calculate_delta(item_data: Dictionary, action: String, wash_succeeded: Var
 	match action:
 		"discard":
 			if is_contaminated:
-				return _d.get("discard_contaminated", 20)
-			return int(roundf(float(_d.get("discard_safe_mul", -10)) * regret))
+				return _d["discard_contaminated"] as int
+			return int(roundf(float(_d["discard_safe_mul"] as int) * regret))
 		"keep":
 			if is_contaminated:
-				return _d.get("keep_contaminated", -30)
-			return _d.get("keep_safe", 15)
+				return _d["keep_contaminated"] as int
+			return _d["keep_safe"] as int
 		"wash":
 			if wash_succeeded:
-				return _d.get("wash_success", 25)
-			return _d.get("wash_fail", -15)
+				return _d["wash_success"] as int
+			return _d["wash_fail"] as int
 		_:
 			push_error("ScoreManager: unknown action '%s'" % action)
 			return 0
 
 
 func calculate_final_score(turns_remaining: int, unprocessed_count: int) -> Dictionary:
-	var turn_bonus: int = _d.get("turn_bonus", 3) * turns_remaining
-	var unprocessed_pen: int = _d.get("unprocessed", -20) * unprocessed_count
+	var turn_bonus: int = (_d["turn_bonus"] as int) * turns_remaining
+	var unprocessed_pen: int = (_d["unprocessed"] as int) * unprocessed_count
 	var raw: int = _raw_score + turn_bonus + unprocessed_pen
 
 	var score_range: float = float(_score_max - _score_min)

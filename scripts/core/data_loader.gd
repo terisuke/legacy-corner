@@ -52,7 +52,9 @@ func get_grandma_comment(normalized_score: int) -> String:
 		return ""
 
 	var lowest_comment: Dictionary = comments[0]
+	var highest_comment: Dictionary = comments[0]
 	var lowest_min: int = lowest_comment.get("score_range", [0, 0])[0]
+	var highest_min: int = lowest_min
 
 	for comment: Dictionary in comments:
 		var score_range: Array = comment.get("score_range", [0, 0])
@@ -62,11 +64,17 @@ func get_grandma_comment(normalized_score: int) -> String:
 		if range_min < lowest_min:
 			lowest_min = range_min
 			lowest_comment = comment
+		if range_min > highest_min:
+			highest_min = range_min
+			highest_comment = comment
 
 		if normalized_score >= range_min and normalized_score <= range_max:
 			return comment.get("text", "") as String
 
-	return lowest_comment.get("text", "") as String
+	push_warning("DataLoader: no audit_comment matched score %d" % normalized_score)
+	if normalized_score < lowest_min:
+		return lowest_comment.get("text", "") as String
+	return highest_comment.get("text", "") as String
 
 
 func get_contamination_comment(rng: RandomNumberGenerator) -> String:
@@ -87,13 +95,13 @@ func get_perfect_comment() -> String:
 func generate_game_items(rng: RandomNumberGenerator) -> Array:
 	var templates: Array = get_item_templates()
 	var constants: Dictionary = get_balance_constants()
-	var contam_coeff: float = constants.get("contamination_coefficient", 0.015) as float
-	var contam_min: float = constants.get("contamination_min", 0.05) as float
-	var contam_max: float = constants.get("contamination_max", 0.85) as float
-	var wash_base: float = constants.get("wash_base", 0.9) as float
-	var wash_coeff: float = constants.get("wash_coefficient", 0.025) as float
-	var wash_min: float = constants.get("wash_min", 0.1) as float
-	var wash_max: float = constants.get("wash_max", 0.9) as float
+	var contam_coeff: float = constants["contamination_coefficient"] as float
+	var contam_min: float = constants["contamination_min"] as float
+	var contam_max: float = constants["contamination_max"] as float
+	var wash_base: float = constants["wash_base"] as float
+	var wash_coeff: float = constants["wash_coefficient"] as float
+	var wash_min: float = constants["wash_min"] as float
+	var wash_max: float = constants["wash_max"] as float
 
 	var items: Array = []
 
