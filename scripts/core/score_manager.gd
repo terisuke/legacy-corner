@@ -136,7 +136,7 @@ func _calculate_delta(item_data: Dictionary, action: String, wash_succeeded: Var
 		"discard":
 			if is_contaminated:
 				return _d["discard_contaminated"] as int
-			return int(roundf(float(_d["discard_safe_mul"] as int) * regret))
+			return _round_score_delta(float(_d["discard_safe_mul"] as int) * regret)
 		"keep":
 			if is_contaminated:
 				return _d["keep_contaminated"] as int
@@ -148,6 +148,21 @@ func _calculate_delta(item_data: Dictionary, action: String, wash_succeeded: Var
 		_:
 			push_error("ScoreManager: unknown action '%s'" % action)
 			return 0
+
+
+func _round_score_delta(value: float) -> int:
+	var floor_value: float = floorf(value)
+	var fraction: float = value - floor_value
+
+	# ADR-003 integer policy: ties round to the nearest even integer.
+	if is_equal_approx(absf(fraction), 0.5):
+		var lower: int = int(floor_value)
+		var upper: int = int(ceilf(value))
+		if lower % 2 == 0:
+			return lower
+		return upper
+
+	return int(roundf(value))
 
 
 func calculate_final_score(turns_remaining: int, unprocessed_count: int) -> Dictionary:
@@ -178,8 +193,8 @@ func calculate_final_score(turns_remaining: int, unprocessed_count: int) -> Dict
 		"normalized_score": normalized,
 		"rank": rank,
 		"decision_history": _decision_history.duplicate(true),
-		"contamination_missed": contamination_missed,
-		"regret_items": regret_items,
+		"contamination_missed": contamination_missed.duplicate(true),
+		"regret_items": regret_items.duplicate(true),
 		"unprocessed_items_count": unprocessed_count,
 	}
 

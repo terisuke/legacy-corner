@@ -85,6 +85,7 @@ func advance_item() -> void:
 		return
 	# INV-4: ターン0では進行不可
 	if turns_remaining <= 0:
+		push_error("GameManager: INV-4 — cannot advance, turns_remaining is 0")
 		return
 	# INV-1: 現在のアイテムが判断済みでなければ進行不可
 	var current: Dictionary = get_current_item()
