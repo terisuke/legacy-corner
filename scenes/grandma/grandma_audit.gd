@@ -37,7 +37,7 @@ func show_audit(audit_report: Dictionary) -> void:
 	var history: Array = audit_report.get("decision_history", [])
 	for entry: Dictionary in history:
 		var label := Label.new()
-		var action_text: String = _action_to_japanese(entry.get("action", ""))
+		var action_text: String = _action_to_japanese(entry)
 		var item_name: String = entry.get("item_name", "")
 		var regret: String = " 💔" if entry.get("triggered_regret", false) else ""
 		var contaminated: String = " [汚染]" if entry.get("is_contaminated", false) else ""
@@ -45,10 +45,16 @@ func show_audit(audit_report: Dictionary) -> void:
 		history_list.add_child(label)
 
 
-func _action_to_japanese(action: String) -> String:
+func _action_to_japanese(entry: Dictionary) -> String:
+	var action: String = entry.get("action", "")
 	match action:
 		"keep": return "残した"
 		"discard": return "捨てた"
-		"wash_success": return "洗った（成功）"
-		"wash_fail": return "洗った（失敗）"
+		"wash":
+			var succeeded: Variant = entry.get("wash_succeeded", null)
+			if succeeded == true:
+				return "洗った（成功）"
+			elif succeeded == false:
+				return "洗った（失敗）"
+			return "洗った"
 		_: return action

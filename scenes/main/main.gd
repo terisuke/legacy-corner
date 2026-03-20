@@ -78,7 +78,7 @@ func _on_turn_consumed(remaining: int) -> void:
 
 
 func _on_layer_opened(layer_index: int) -> void:
-	var layers_count: int = GameManager.get_layers_count() if GameManager.has_method("get_layers_count") else 3
+	var layers_count: int = GameManager.get_layers_count()
 	layer_label.text = "層: %d / %d" % [layer_index + 1, layers_count]
 	_show_current_item()
 
@@ -119,34 +119,34 @@ func _set_actions_enabled(enabled: bool) -> void:
 # === Decision handlers — all delegate to DecisionSystem ===
 
 func _on_keep_pressed() -> void:
-	if not GameManager.use_turn():
-		return
 	var item: Dictionary = GameManager.get_current_item()
 	var result: Dictionary = _decision_system.execute_decision(item, "keep", GameManager.rng)
 	if not result.get("success", false):
+		return
+	if not GameManager.use_turn():
 		return
 	_advance_to_next()
 
 
 func _on_discard_pressed() -> void:
-	if not GameManager.use_turn():
-		return
 	var item: Dictionary = GameManager.get_current_item()
 	var result: Dictionary = _decision_system.execute_decision(item, "discard", GameManager.rng)
 	if not result.get("success", false):
+		return
+	if not GameManager.use_turn():
 		return
 	# Memory text shown via regret_triggered signal
 	_advance_to_next()
 
 
 func _on_wash_pressed() -> void:
-	if not GameManager.use_turn():
-		return
 	var item: Dictionary = GameManager.get_current_item()
 	if not item.get("washable", false):
 		return
 	var result: Dictionary = _decision_system.execute_decision(item, "wash", GameManager.rng)
 	if not result.get("success", false):
+		return
+	if not GameManager.use_turn():
 		return
 	_advance_to_next()
 

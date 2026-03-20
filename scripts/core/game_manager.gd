@@ -110,6 +110,10 @@ func get_current_item() -> Dictionary:
 	return game_items[index]
 
 
+func get_layers_count() -> int:
+	return _layers_count
+
+
 func get_items_for_layer(layer_index: int) -> Array:
 	var start: int = layer_index * _items_per_layer
 	var end: int = start + _items_per_layer
