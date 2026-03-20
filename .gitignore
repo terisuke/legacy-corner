@@ -1,0 +1,17 @@
+# Godot 4 generated files
+.godot/
+
+# Export presets (contains export paths, not sensitive but usually local)
+export_presets.cfg
+
+# Build outputs
+builds/
+
+# macOS
+.DS_Store
+*.DS_Store
+
+# Editor temp files
+*.tmp
+*.bak
+*.swp

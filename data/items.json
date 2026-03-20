@@ -1,0 +1,63 @@
+{
+  "items": [
+    {
+      "id": "item_jubako_lid",
+      "name": "重箱の蓋",
+      "years_old_range": [1, 15],
+      "base_contamination_chance": 0.3,
+      "memory_text": "お正月に並んだ、あの頃の年越しを思い出す蓋。",
+      "washable": true,
+      "discard_regret": 0.8
+    },
+    {
+      "id": "item_lacquer_chopsticks",
+      "name": "漆塗り箸",
+      "years_old_range": [5, 30],
+      "base_contamination_chance": 0.5,
+      "memory_text": "おじいちゃんが選んでくれた箸。もう同じものは手に入らない。",
+      "washable": true,
+      "discard_regret": 0.95
+    },
+    {
+      "id": "item_mystery_cloth",
+      "name": "正体不明の布",
+      "years_old_range": [3, 20],
+      "base_contamination_chance": 0.9,
+      "memory_text": "なぜここに…？",
+      "washable": false,
+      "discard_regret": 0.1
+    },
+    {
+      "id": "item_new_year_envelope",
+      "name": "古いポチ袋",
+      "years_old_range": [1, 10],
+      "base_contamination_chance": 0.1,
+      "memory_text": "開けると中に百円玉が一枚。",
+      "washable": false,
+      "discard_regret": 0.6
+    }
+  ],
+  "tools": [
+    {
+      "id": "tool_uv_light",
+      "name": "UVライト",
+      "description": "目に見えない汚染を可視化する。",
+      "reveal_chance": 0.9,
+      "unlock_layer": 1
+    },
+    {
+      "id": "tool_smell_sensor",
+      "name": "嗅覚センサー",
+      "description": "腐敗臭・カビ臭を数値で検知する。",
+      "reveal_chance": 0.7,
+      "unlock_layer": 2
+    },
+    {
+      "id": "tool_ai_bacteria",
+      "name": "AI菌解析キット",
+      "description": "写真を撮るだけで菌種と危険度を判定する。",
+      "reveal_chance": 0.95,
+      "unlock_layer": 3
+    }
+  ]
+}
