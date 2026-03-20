@@ -12,10 +12,14 @@ extends Control
 @onready var wash_button := $GamePanel/ActionButtons/WashButton
 @onready var tool_button := $GamePanel/ToolButton
 @onready var start_button := $TitlePanel/VBoxContainer/StartButton
-@onready var retry_button := $ResultPanel/VBoxContainer/RetryButton
 
 var _current_item_card: Node = null
 var _item_card_scene: PackedScene = null
+var _grandma_scene: PackedScene = null
+var _result_scene: PackedScene = null
+var _grandma_instance: Node = null
+var _result_instance: Node = null
+var _audit_report: Dictionary = {}
 
 const _ContaminationSystemScript = preload("res://scripts/systems/contamination_system.gd")
 var _contamination_system: RefCounted = null
@@ -23,6 +27,8 @@ var _contamination_system: RefCounted = null
 
 func _ready() -> void:
 	_item_card_scene = load("res://scenes/box/item_card.tscn")
+	_grandma_scene = load("res://scenes/grandma/grandma_audit.tscn")
+	_result_scene = load("res://scenes/ui/result_screen.tscn")
 	_contamination_system = _ContaminationSystemScript.new()
 
 	GameManager.state_changed.connect(_on_state_changed)
@@ -30,13 +36,12 @@ func _ready() -> void:
 	GameManager.layer_opened.connect(_on_layer_opened)
 
 	start_button.pressed.connect(_on_start_pressed)
-	retry_button.pressed.connect(_on_start_pressed)
 	keep_button.pressed.connect(_on_keep_pressed)
 	discard_button.pressed.connect(_on_discard_pressed)
 	wash_button.pressed.connect(_on_wash_pressed)
 	tool_button.pressed.connect(_on_tool_pressed)
 
-	# Tool button disabled until Wave 3 integration is complete
+	# Tool button disabled until full Wave 3 integration
 	tool_button.disabled = true
 
 	_show_panel(title_panel)
@@ -60,9 +65,9 @@ func _on_state_changed(
 		GameManager.GameState.DECISION:
 			_show_panel(game_panel)
 		GameManager.GameState.GRANDMA_AUDIT:
-			_show_panel(grandma_panel)
+			_show_grandma_audit()
 		GameManager.GameState.RESULT:
-			_show_panel(result_panel)
+			_show_result()
 
 
 func _on_turn_consumed(remaining: int) -> void:
@@ -76,6 +81,9 @@ func _on_layer_opened(layer_index: int) -> void:
 
 
 func _on_start_pressed() -> void:
+	# Clean up previous game instances
+	_cleanup_grandma()
+	_cleanup_result()
 	GameManager.start_game()
 
 
@@ -104,7 +112,6 @@ func _set_actions_enabled(enabled: bool) -> void:
 	wash_button.disabled = (
 		not enabled or not GameManager.get_current_item().get("washable", false)
 	)
-	# tool_button stays disabled until Wave 3
 
 
 func _on_keep_pressed() -> void:
@@ -120,7 +127,6 @@ func _on_discard_pressed() -> void:
 		return
 	var item: Dictionary = GameManager.get_current_item()
 	ScoreManager.record_decision(item, "discard", {})
-	# Always show memory on discard (INV-3: no is_contaminated branch in UI)
 	if _current_item_card != null:
 		_current_item_card.show_memory()
 	_advance_to_next()
@@ -130,7 +136,6 @@ func _on_wash_pressed() -> void:
 	if not GameManager.use_turn():
 		return
 	var item: Dictionary = GameManager.get_current_item()
-	# Delegate to ContaminationSystem (single authority for wash logic)
 	var success: bool = _contamination_system.attempt_wash(item, GameManager.rng)
 	var action: String = "wash_success" if success else "wash_fail"
 	ScoreManager.record_decision(item, action, {})
@@ -138,7 +143,6 @@ func _on_wash_pressed() -> void:
 
 
 func _on_tool_pressed() -> void:
-	# Disabled in MVP — will be enabled in Wave 3 with ContaminationSystem.inspect_item()
 	pass
 
 
@@ -148,3 +152,60 @@ func _advance_to_next() -> void:
 	if GameManager.current_state == GameManager.GameState.GRANDMA_AUDIT:
 		return
 	_show_current_item()
+
+
+# === Wave 4: Grandma Audit ===
+
+func _show_grandma_audit() -> void:
+	_show_panel(grandma_panel)
+
+	# Calculate final score
+	var unprocessed: int = _count_unprocessed()
+	_audit_report = ScoreManager.calculate_final_score(
+		GameManager.turns_remaining, unprocessed
+	)
+
+	# Instantiate grandma scene into the panel
+	_cleanup_grandma()
+	_grandma_instance = _grandma_scene.instantiate()
+	grandma_panel.add_child(_grandma_instance)
+	_grandma_instance.show_audit(_audit_report)
+	_grandma_instance.continue_pressed.connect(_on_grandma_continue)
+
+
+func _on_grandma_continue() -> void:
+	GameManager.change_state(GameManager.GameState.RESULT)
+
+
+func _cleanup_grandma() -> void:
+	if _grandma_instance != null:
+		_grandma_instance.queue_free()
+		_grandma_instance = null
+
+
+# === Wave 4: Result Screen ===
+
+func _show_result() -> void:
+	_show_panel(result_panel)
+
+	_cleanup_result()
+	_result_instance = _result_scene.instantiate()
+	result_panel.add_child(_result_instance)
+	_result_instance.show_result(_audit_report)
+	_result_instance.retry_pressed.connect(_on_start_pressed)
+
+
+func _cleanup_result() -> void:
+	if _result_instance != null:
+		_result_instance.queue_free()
+		_result_instance = null
+
+
+# === Helpers ===
+
+func _count_unprocessed() -> int:
+	var count: int = 0
+	for item: Dictionary in GameManager.game_items:
+		if item.get("decision", null) == null:
+			count += 1
+	return count

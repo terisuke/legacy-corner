@@ -103,7 +103,7 @@ offset_bottom = -55.0
 grow_horizontal = 2
 text = "UVライトで検査"
 
-[node name="GrandmaPanel" type="CenterContainer" parent="."]
+[node name="GrandmaPanel" type="Control" parent="."]
 visible = false
 layout_mode = 2
 anchor_right = 1.0
@@ -111,27 +111,10 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="PlaceholderLabel" type="Label" parent="GrandmaPanel"]
-layout_mode = 2
-text = "祖母レビュー（Wave 4で実装）"
-horizontal_alignment = 1
-
-[node name="ResultPanel" type="CenterContainer" parent="."]
+[node name="ResultPanel" type="Control" parent="."]
 visible = false
 layout_mode = 2
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="ResultPanel"]
-layout_mode = 2
-
-[node name="ResultLabel" type="Label" parent="ResultPanel/VBoxContainer"]
-layout_mode = 2
-text = "リザルト（Wave 4で実装）"
-horizontal_alignment = 1
-
-[node name="RetryButton" type="Button" parent="ResultPanel/VBoxContainer"]
-layout_mode = 2
-text = "もう一度"
