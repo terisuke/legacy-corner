@@ -4,6 +4,10 @@ extends Node
 
 var _score_min: int = 0
 var _score_max: int = 0
+var _rank_s_min: int = 0
+var _rank_a_min: int = 0
+var _rank_b_min: int = 0
+var _rank_c_min: int = 0
 
 # Score delta constants — loaded from DataLoader (INV-6: no hardcoded balance values)
 var _d: Dictionary = {}
@@ -17,9 +21,30 @@ func _ready() -> void:
 	var c: Dictionary = DataLoader.get_balance_constants()
 	assert(c.has("score_min"), "ScoreManager: balance_constants missing score_min")
 	assert(c.has("score_max"), "ScoreManager: balance_constants missing score_max")
+	assert(c.has("score_discard_contaminated"), "ScoreManager: missing score_discard_contaminated")
+	assert(c.has("score_discard_safe_multiplier"), "ScoreManager: missing score_discard_safe_multiplier")
+	assert(c.has("score_keep_safe"), "ScoreManager: missing score_keep_safe")
+	assert(c.has("score_keep_contaminated"), "ScoreManager: missing score_keep_contaminated")
+	assert(c.has("score_wash_success"), "ScoreManager: missing score_wash_success")
+	assert(c.has("score_wash_fail"), "ScoreManager: missing score_wash_fail")
+	assert(c.has("score_tool_found_bonus"), "ScoreManager: missing score_tool_found_bonus")
+	assert(c.has("score_turn_bonus"), "ScoreManager: missing score_turn_bonus")
+	assert(c.has("score_unprocessed_penalty"), "ScoreManager: missing score_unprocessed_penalty")
+	assert(c.has("rank_s_min"), "ScoreManager: missing rank_s_min")
+	assert(c.has("rank_a_min"), "ScoreManager: missing rank_a_min")
+	assert(c.has("rank_b_min"), "ScoreManager: missing rank_b_min")
+	assert(c.has("rank_c_min"), "ScoreManager: missing rank_c_min")
 	_score_min = c["score_min"] as int
 	_score_max = c["score_max"] as int
+	_rank_s_min = c["rank_s_min"] as int
+	_rank_a_min = c["rank_a_min"] as int
+	_rank_b_min = c["rank_b_min"] as int
+	_rank_c_min = c["rank_c_min"] as int
 	assert(_score_max > _score_min, "ScoreManager: score_max must be greater than score_min")
+	assert(_rank_s_min > _rank_a_min, "ScoreManager: rank_s_min must be > rank_a_min")
+	assert(_rank_a_min > _rank_b_min, "ScoreManager: rank_a_min must be > rank_b_min")
+	assert(_rank_b_min > _rank_c_min, "ScoreManager: rank_b_min must be > rank_c_min")
+	assert(_rank_c_min >= 0, "ScoreManager: rank_c_min must be >= 0")
 	_d = {
 		"discard_contaminated": c["score_discard_contaminated"] as int,
 		"discard_safe_mul": c["score_discard_safe_multiplier"] as int,
@@ -89,7 +114,10 @@ func _normalize_action(action: String) -> String:
 		return "wash"
 	if action == "wash_fail":
 		return "wash"
-	return action
+	if action == "discard" or action == "keep" or action == "wash":
+		return action
+	push_error("ScoreManager: unrecognized action '%s'" % action)
+	return ""
 
 
 func _resolve_wash_succeeded(action: String, action_result: Dictionary) -> Variant:
@@ -157,13 +185,13 @@ func calculate_final_score(turns_remaining: int, unprocessed_count: int) -> Dict
 
 
 func _get_rank(normalized: int) -> String:
-	if normalized >= 90:
+	if normalized >= _rank_s_min:
 		return "S"
-	elif normalized >= 70:
+	elif normalized >= _rank_a_min:
 		return "A"
-	elif normalized >= 50:
+	elif normalized >= _rank_b_min:
 		return "B"
-	elif normalized >= 30:
+	elif normalized >= _rank_c_min:
 		return "C"
 	else:
 		return "D"
