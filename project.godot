@@ -25,7 +25,14 @@ window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="keep"
 
+[autoload]
+
+DataLoader="*res://scripts/core/data_loader.gd"
+GameManager="*res://scripts/core/game_manager.gd"
+ScoreManager="*res://scripts/core/score_manager.gd"
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.08, 0.08, 0.1, 1)

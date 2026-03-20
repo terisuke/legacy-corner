@@ -18,3 +18,4 @@ builds/
 *.tmp
 *.bak
 *.swp
+*.uid

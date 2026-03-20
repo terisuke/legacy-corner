@@ -1,0 +1,64 @@
+[gd_scene load_steps=2 format=3 uid="uid://grandma_audit"]
+
+[ext_resource type="Script" path="res://scenes/grandma/grandma_audit.gd" id="1"]
+
+[node name="GrandmaAudit" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+
+[node name="GrandmaLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "👵 おばあちゃんの審判"
+horizontal_alignment = 1
+
+[node name="CommentLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = ""
+horizontal_alignment = 1
+
+[node name="ScoreLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "スコア: -- / 100"
+horizontal_alignment = 1
+
+[node name="RankLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "ランク: -"
+horizontal_alignment = 1
+
+[node name="WarningLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+text = ""
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="HistoryTitle" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "判断の振り返り"
+horizontal_alignment = 1
+
+[node name="HistoryList" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ContinueButton" type="Button" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "結果を見る"
