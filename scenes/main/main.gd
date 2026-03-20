@@ -75,10 +75,9 @@ func _on_turn_consumed(remaining: int) -> void:
 	turn_label.text = "残りターン: %d" % remaining
 	if remaining <= 0:
 		_set_actions_enabled(false)
-		# Brief delay to show final state, then end game
 		await get_tree().create_timer(0.5).timeout
+		# change_state triggers _on_state_changed → _show_grandma_audit
 		GameManager.change_state(GameManager.GameState.GRANDMA_AUDIT)
-		_show_grandma_audit()
 
 
 func _on_layer_opened(layer_index: int) -> void:
@@ -125,10 +124,10 @@ func _set_actions_enabled(enabled: bool) -> void:
 # === Decision handlers — all delegate to DecisionSystem ===
 
 func _on_keep_pressed() -> void:
-	GameManager.change_state(GameManager.GameState.DECISION)
 	var item: Dictionary = GameManager.get_current_item()
 	if not GameManager.use_turn():
 		return
+	GameManager.change_state(GameManager.GameState.DECISION)
 	var result: Dictionary = _decision_system.execute_decision(item, "keep", GameManager.rng)
 	if not result.get("success", false):
 		return
@@ -136,14 +135,13 @@ func _on_keep_pressed() -> void:
 
 
 func _on_discard_pressed() -> void:
-	GameManager.change_state(GameManager.GameState.DECISION)
 	var item: Dictionary = GameManager.get_current_item()
 	if not GameManager.use_turn():
 		return
+	GameManager.change_state(GameManager.GameState.DECISION)
 	var result: Dictionary = _decision_system.execute_decision(item, "discard", GameManager.rng)
 	if not result.get("success", false):
 		return
-	# If regret was triggered, delay advancement so player can see memory text
 	var res: Dictionary = result.get("result", {})
 	if res.get("triggered_regret", false):
 		_set_actions_enabled(false)
@@ -152,12 +150,12 @@ func _on_discard_pressed() -> void:
 
 
 func _on_wash_pressed() -> void:
-	GameManager.change_state(GameManager.GameState.DECISION)
 	var item: Dictionary = GameManager.get_current_item()
 	if not item.get("washable", false):
 		return
 	if not GameManager.use_turn():
 		return
+	GameManager.change_state(GameManager.GameState.DECISION)
 	var result: Dictionary = _decision_system.execute_decision(item, "wash", GameManager.rng)
 	if not result.get("success", false):
 		return
@@ -165,14 +163,17 @@ func _on_wash_pressed() -> void:
 
 
 func _on_tool_pressed() -> void:
-	if not GameManager.use_turn():
-		return
 	var item: Dictionary = GameManager.get_current_item()
+	# Guard: already inspected or no tools available
+	if item.get("inspection_result", null) != null:
+		return
 	var mvp_tools: Array = DataLoader.get_mvp_tools()
 	if mvp_tools.is_empty():
 		return
+	if not GameManager.use_turn():
+		return
 	var tool_data: Dictionary = mvp_tools[0]
-	var cs = _ContaminationSystemScript.new()
+	var cs: RefCounted = _ContaminationSystemScript.new()
 	var result: Dictionary = cs.inspect_item(item, tool_data, GameManager.rng)
 	item["inspection_result"] = result
 	var display_text: String = ""
