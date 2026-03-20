@@ -85,10 +85,6 @@ func advance_item() -> void:
 	if not current.is_empty() and current.get("decision", null) == null:
 		push_error("GameManager: INV-1 — cannot advance, current item has no decision")
 		return
-	# Allow the final decision to be recorded before timing out the session.
-	if turns_remaining <= 0:
-		finalize_action()
-		return
 	current_item_index += 1
 
 	if current_item_index >= _items_per_layer:
@@ -100,6 +96,11 @@ func advance_item() -> void:
 			return
 
 		layer_opened.emit(current_layer)
+
+	# Check timeout AFTER completed check — if all items are done, "completed" wins.
+	if turns_remaining <= 0:
+		finalize_action()
+		return
 
 
 func get_current_item() -> Dictionary:
