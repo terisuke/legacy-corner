@@ -1,3 +1,6 @@
+# Claude agent state (local only)
+.claude/
+
 # Godot 4 generated files
 .godot/
 
