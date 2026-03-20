@@ -109,14 +109,14 @@ wash_success_rate = clamp(raw_wash_rate, 0.1, 0.9)
 ### アクション別スコア
 
 #### 整数ポリシー（Codexレビュー2回目で追加）
-> **全score_deltaはint型**。小数が生じる計算はround()で丸める。
-> `score_delta = int(round(-10.0 * discard_regret))`
-> 例: -10 × 0.95 = round(-9.5) = **-10**、-10 × 0.05 = round(-0.5) = **0**
+> **全score_deltaはint型**。小数が生じる計算は**ties to even**で丸める。
+> `score_delta = round_ties_to_even(-10.0 * discard_regret)`
+> 例: -10 × 0.95 = round_ties_to_even(-9.5) = **-10**、-10 × 0.05 = round_ties_to_even(-0.5) = **0**
 
 | アクション | 条件 | スコア（int） |
 |-----------|------|--------|
 | 捨てる | 汚染アイテム | +20 |
-| 捨てる | 安全アイテム | `round(-10 × discard_regret)` |
+| 捨てる | 安全アイテム | `round_ties_to_even(-10 × discard_regret)` |
 | 残す | 安全アイテム | +15 |
 | 残す | 汚染アイテム | -30 |
 | 洗う→成功 | 汚染アイテム | +25 |
