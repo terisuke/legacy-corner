@@ -21,17 +21,18 @@ var game_items: Array = []
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
-func start_game(seed_value: int = -1) -> void:
+func start_game(seed_value: Variant = null) -> void:
 	current_state = GameState.TITLE
 	current_layer = 0
 	current_item_index = 0
 	turns_remaining = MAX_TURNS
 	game_items = []
+	ScoreManager.reset()
 
-	if seed_value == -1:
+	if seed_value == null:
 		rng.randomize()
 	else:
-		rng.seed = seed_value
+		rng.seed = seed_value as int
 
 	game_items = DataLoader.generate_game_items(rng)
 	change_state(GameState.LAYER_OPEN)
@@ -58,6 +59,9 @@ func change_state(new_state: GameState) -> void:
 
 
 func advance_item() -> void:
+	# INV-4: ターン0では進行不可
+	if turns_remaining <= 0:
+		return
 	current_item_index += 1
 
 	if current_item_index >= ITEMS_PER_LAYER:

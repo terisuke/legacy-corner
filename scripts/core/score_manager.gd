@@ -5,14 +5,29 @@ extends Node
 var _score_min: int = -180
 var _score_max: int = 170
 
+# Score delta constants — loaded from DataLoader (INV-6: no hardcoded balance values)
+var _d: Dictionary = {}
+
+# Internal state — NO public getter for score (INV-2)
 var _raw_score: int = 0
 var _decision_history: Array = []
 
 
 func _ready() -> void:
-	var constants: Dictionary = DataLoader.get_balance_constants()
-	_score_min = constants.get("score_min", -180) as int
-	_score_max = constants.get("score_max", 170) as int
+	var c: Dictionary = DataLoader.get_balance_constants()
+	_score_min = c.get("score_min", -180) as int
+	_score_max = c.get("score_max", 170) as int
+	_d = {
+		"discard_contaminated": c.get("score_discard_contaminated", 20) as int,
+		"discard_safe_mul": c.get("score_discard_safe_multiplier", -10) as int,
+		"keep_safe": c.get("score_keep_safe", 15) as int,
+		"keep_contaminated": c.get("score_keep_contaminated", -30) as int,
+		"wash_success": c.get("score_wash_success", 25) as int,
+		"wash_fail": c.get("score_wash_fail", -15) as int,
+		"tool_bonus": c.get("score_tool_found_bonus", 5) as int,
+		"turn_bonus": c.get("score_turn_bonus", 3) as int,
+		"unprocessed": c.get("score_unprocessed_penalty", -20) as int,
+	}
 
 
 func reset() -> void:
@@ -21,10 +36,15 @@ func reset() -> void:
 
 
 func record_decision(item_data: Dictionary, action: String, action_result: Dictionary) -> void:
+	# INV-1: 1アイテム1回のみ。判断済みは拒否。
+	if item_data.get("decision", null) != null:
+		push_error("ScoreManager: INV-1 violation — duplicate decision for '%s'" % item_data.get("id", ""))
+		return
+
 	var score_delta: int = _calculate_delta(item_data, action)
 
 	if action_result.get("tool_found_contamination", false):
-		score_delta += 5
+		score_delta += _d.get("tool_bonus", 5)
 
 	_raw_score += score_delta
 
@@ -44,28 +64,30 @@ func record_decision(item_data: Dictionary, action: String, action_result: Dicti
 
 func _calculate_delta(item_data: Dictionary, action: String) -> int:
 	var is_contaminated: bool = item_data.get("is_contaminated", false)
-	var discard_regret: float = item_data.get("discard_regret", 0.0) as float
+	var regret: float = item_data.get("discard_regret", 0.0) as float
 
 	match action:
 		"discard":
 			if is_contaminated:
-				return 20
-			return int(roundf(-10.0 * discard_regret))
+				return _d.get("discard_contaminated", 20)
+			return int(roundf(float(_d.get("discard_safe_mul", -10)) * regret))
 		"keep":
 			if is_contaminated:
-				return -30
-			return 15
+				return _d.get("keep_contaminated", -30)
+			return _d.get("keep_safe", 15)
 		"wash_success":
-			return 25
+			return _d.get("wash_success", 25)
 		"wash_fail":
-			return -15
+			return _d.get("wash_fail", -15)
 		_:
 			push_error("ScoreManager: unknown action '%s'" % action)
 			return 0
 
 
 func calculate_final_score(turns_remaining: int, unprocessed_count: int) -> Dictionary:
-	var raw: int = _raw_score + (3 * turns_remaining) + (-20 * unprocessed_count)
+	var turn_bonus: int = _d.get("turn_bonus", 3) * turns_remaining
+	var unprocessed_pen: int = _d.get("unprocessed", -20) * unprocessed_count
+	var raw: int = _raw_score + turn_bonus + unprocessed_pen
 
 	var score_range: float = float(_score_max - _score_min)
 	var normalized: int = 0

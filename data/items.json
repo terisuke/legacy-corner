@@ -93,6 +93,22 @@
     "contamination_formula": "clamp(base + years_old * 0.015, 0.05, 0.85)",
     "wash_formula": "clamp(0.9 - years_old * 0.025, 0.1, 0.9)",
     "score_min": -180,
-    "score_max": 170
+    "score_max": 170,
+    "score_discard_contaminated": 20,
+    "score_discard_safe_multiplier": -10,
+    "score_keep_safe": 15,
+    "score_keep_contaminated": -30,
+    "score_wash_success": 25,
+    "score_wash_fail": -15,
+    "score_tool_found_bonus": 5,
+    "score_turn_bonus": 3,
+    "score_unprocessed_penalty": -20,
+    "contamination_coefficient": 0.015,
+    "contamination_min": 0.05,
+    "contamination_max": 0.85,
+    "wash_base": 0.9,
+    "wash_coefficient": 0.025,
+    "wash_min": 0.1,
+    "wash_max": 0.9
   }
 }
